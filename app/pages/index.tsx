@@ -1,17 +1,14 @@
-"use client";
-
 import React from 'react';
-import { Layout } from '@/app/components/layout/Layout';
-import { BoardCard } from '@/app/components/boards/BoardCard';
-import { BoardModal } from '@/app/components/boards/BoardModal';
-import { Button } from '@/app/components/ui/Button';
-import { Input } from '@/app/components/ui/Input';
-import { useAppState } from '@/app/utils/hooks';
-import { hapticFeedback } from '@/app/utils/telegram';
-import { showConfirmationDialog } from '@/app/utils/notifications';
-import { calculateSystemHealthScore } from '@/app/utils/analytics';
-import { createInitialBoards, createInitialTasks } from '@/app/utils/initialData';
-import { Board } from '@/app/types';
+import { Layout } from '../components/layout/Layout';
+import { BoardCard } from '../components/boards/BoardCard';
+import { BoardModal } from '../components/boards/BoardModal';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { useAppState } from '../utils/hooks';
+import { hapticFeedback } from '../utils/telegram';
+import { showConfirmationDialog } from '../utils/notifications';
+import { calculateSystemHealthScore } from '../utils/analytics';
+import { Board } from '../types';
 
 export default function Dashboard() {
   const { state, setState, isLoading } = useAppState();
@@ -20,9 +17,9 @@ export default function Dashboard() {
   const [editingBoard, setEditingBoard] = React.useState<Board | undefined>();
 
   const systemHealthScore = React.useMemo(() => {
-    if (!state?.tasks) return 100;
-    return calculateSystemHealthScore(state.tasks);
-  }, [state?.tasks]);
+    if (!state?.boards) return 100;
+    return calculateSystemHealthScore(state.boards);
+  }, [state?.boards]);
 
   const filteredBoards = React.useMemo(() => {
     if (!state?.boards) return [];
@@ -72,11 +69,9 @@ export default function Dashboard() {
       'Are you sure you want to reset all data? This action cannot be undone.'
     );
     if (confirmed && state) {
-      const initialBoards = createInitialBoards();
       setState({
         ...state,
-        boards: initialBoards,
-        tasks: createInitialTasks(initialBoards),
+        boards: [],
         statusChangeLogs: [],
       });
     }
@@ -266,7 +261,6 @@ export default function Dashboard() {
               <BoardCard
                 key={board.id}
                 board={board}
-                tasks={state?.tasks.filter(task => task.boardId === board.id) || []}
                 onEdit={handleEditBoard}
                 onDelete={handleDeleteBoard}
                 onAddTask={handleAddTask}
@@ -284,4 +278,4 @@ export default function Dashboard() {
       </div>
     </Layout>
   );
-}
+} 
