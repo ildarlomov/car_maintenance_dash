@@ -38,9 +38,10 @@ export default function Dashboard() {
   const [editingBoardName, setEditingBoardName] = useState('');
 
   const systemHealthScore = React.useMemo(() => {
-    if (!state?.tasks) return 100;
-    return calculateSystemHealthScore(state.tasks);
-  }, [state?.tasks]);
+    if (!state?.boards) return 100;
+    const allTasks = state.boards.flatMap(board => board.tasks);
+    return calculateSystemHealthScore(allTasks);
+  }, [state?.boards]);
 
   const filteredBoards = React.useMemo(() => {
     if (!state?.boards) return [];
@@ -67,7 +68,7 @@ export default function Dashboard() {
         }
       }
     },
-    preventDefaultTouchmoveEvent: true,
+    preventScrollOnSwipe: true,
     trackMouse: true,
   });
 
@@ -142,7 +143,7 @@ export default function Dashboard() {
       const newBoard: Board = {
         ...boardData,
         id: crypto.randomUUID(),
-        createdAt: now,
+        createdAt: now.getTime(),
         tasks: [], // Initialize empty tasks array
       };
 
@@ -153,17 +154,19 @@ export default function Dashboard() {
     }
   };
 
-  const handleTaskSubmit = (taskData: Omit<Task, 'id' | 'createdAt' | 'lastInteraction' | 'lastStatusChange'>) => {
+  const handleTaskSubmit = (taskData: Partial<Task>) => {
     if (!state || !selectedBoardId) return;
 
     const now = new Date();
     const newTask: Task = {
       ...taskData,
       id: crypto.randomUUID(),
-      createdAt: now,
-      lastInteraction: now,
-      lastStatusChange: now,
-    };
+      createdAt: now.getTime(),
+      lastInteraction: now.getTime(),
+      lastStatusChange: now.getTime(),
+      status: taskData.status || 'active',
+      boardId: selectedBoardId,
+    } as Task;
 
     setState({
       ...state,
@@ -180,8 +183,8 @@ export default function Dashboard() {
         ? {
             ...task,
             status: newStatus,
-            lastInteraction: now,
-            lastStatusChange: now,
+            lastInteraction: now.getTime(),
+            lastStatusChange: now.getTime(),
           }
         : task
     );
@@ -194,10 +197,10 @@ export default function Dashboard() {
         {
           id: crypto.randomUUID(),
           taskId,
-          taskName: state.tasks.find(t => t.id === taskId)?.name || '',
-          oldStatus: state.tasks.find(t => t.id === taskId)?.status || 'inactive',
+          taskName: state.tasks.find(t => t.id === taskId)?.title || '',
+          oldStatus: state.tasks.find(t => t.id === taskId)?.status || 'active',
           newStatus,
-          timestamp: now,
+          timestamp: now.getTime(),
           userId: 'USER',
         },
       ],

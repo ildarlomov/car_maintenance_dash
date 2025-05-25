@@ -236,6 +236,7 @@ export const useAppState = () => {
 
   return {
     state,
+    setState,
     isLoading,
     createBoard,
     updateBoard,

@@ -148,19 +148,15 @@ export const calculateStatusChangeStatistics = (
 };
 
 export const calculateTaskHealthScore = (task: Task): number => {
-  const now = new Date();
-  const lastInteraction = new Date(task.lastInteraction);
-  const hoursSinceLastInteraction = (now.getTime() - lastInteraction.getTime()) / (1000 * 60 * 60);
+  const now = new Date().getTime();
+  const hoursSinceLastInteraction = (now - task.lastInteraction) / (1000 * 60 * 60);
 
-  if (task.status === 'inactive') return 0;
-
-  if (hoursSinceLastInteraction >= task.criticalHours) {
-    return 0;
-  } else if (hoursSinceLastInteraction >= task.warningHours) {
-    return 50;
-  } else {
-    return 100;
-  }
+  if (task.status === 'completed') return 100;
+  if (task.status === 'critical') return 0;
+  if (task.status === 'warning') return 50;
+  if (hoursSinceLastInteraction >= task.criticalHours) return 0;
+  if (hoursSinceLastInteraction >= task.warningHours) return 50;
+  return 100;
 };
 
 export const calculateBoardHealthScore = (tasks: Task[]): number => {
@@ -173,17 +169,16 @@ export const calculateBoardHealthScore = (tasks: Task[]): number => {
 export const calculateSystemHealthScore = (tasks: Task[]): number => {
   if (!tasks.length) return 100;
 
-  const now = new Date();
+  const now = new Date().getTime();
   const taskScores: number[] = tasks.map((task) => {
-    const hoursSinceLastInteraction = (now.getTime() - task.lastInteraction.getTime()) / (1000 * 60 * 60);
+    const hoursSinceLastInteraction = (now - task.lastInteraction) / (1000 * 60 * 60);
     
     if (task.status === 'critical') return 0;
     if (task.status === 'warning') return 50;
-    if (hoursSinceLastInteraction > task.criticalHours) return 0;
-    if (hoursSinceLastInteraction > task.warningHours) return 50;
+    if (hoursSinceLastInteraction >= task.criticalHours) return 0;
+    if (hoursSinceLastInteraction >= task.warningHours) return 50;
     return 100;
   });
 
-  const averageScore = taskScores.reduce((sum, score) => sum + score, 0) / taskScores.length;
-  return Math.round(averageScore);
+  return Math.floor(taskScores.reduce((sum, score) => sum + score, 0) / tasks.length);
 }; 

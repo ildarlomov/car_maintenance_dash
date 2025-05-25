@@ -8,6 +8,7 @@ export interface Task {
   boardId: string;
   createdAt: number;
   lastInteraction: number;
+  lastStatusChange: number;
   warningHours: number;
   criticalHours: number;
   iconLibrary: IconLibrary;
@@ -18,6 +19,8 @@ export interface Board {
   id: string;
   name: string;
   tasks: Task[];
+  order: number;
+  createdAt: number;
 }
 
 export interface StatusChangeLog {
@@ -26,11 +29,13 @@ export interface StatusChangeLog {
   taskName: string;
   oldStatus: Task['status'];
   newStatus: Task['status'];
-  timestamp: Date;
+  timestamp: number;
   userId?: string;
 }
 
 export interface AppState {
   boards: Board[];
   currentTime: number;
+  tasks: Task[];
+  statusChangeLogs: StatusChangeLog[];
 } 
