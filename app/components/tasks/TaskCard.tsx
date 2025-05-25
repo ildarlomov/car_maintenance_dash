@@ -10,18 +10,19 @@ import * as HiIcons from 'react-icons/hi';
 
 interface TaskCardProps {
   task: Task;
-  onLongPress: (task: Task) => void;
-  onClick: (task: Task) => void;
+  onStatusChange?: (taskId: string, newStatus: Task['status']) => void;
+  onEdit?: (taskId: string) => void;
+  onDelete?: (taskId: string) => void;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, onLongPress, onClick }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({ task, onStatusChange, onEdit, onDelete }) => {
   const [isPressed, setIsPressed] = React.useState(false);
   const pressTimer = React.useRef<NodeJS.Timeout>();
 
   const handlePressStart = () => {
     pressTimer.current = setTimeout(() => {
       setIsPressed(true);
-      onLongPress(task);
+      if (onEdit) onEdit(task.id);
     }, 500);
   };
 
@@ -29,8 +30,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onLongPress, onClick }
     if (pressTimer.current) {
       clearTimeout(pressTimer.current);
     }
-    if (!isPressed) {
-      onClick(task);
+    if (!isPressed && onStatusChange) {
+      const newStatus = task.status === 'active' ? 'warning' : 
+                       task.status === 'warning' ? 'critical' : 
+                       task.status === 'critical' ? 'completed' : 'active';
+      onStatusChange(task.id, newStatus);
     }
     setIsPressed(false);
   };

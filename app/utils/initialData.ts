@@ -7,14 +7,14 @@ const createInitialTask = (
   boardId: string,
   warningHours: number,
   criticalHours: number,
-  status: 'inactive' | 'warning' | 'critical' = 'inactive'
+  status: 'active' | 'warning' | 'critical' = 'active'
 ): Task => {
-  const now = new Date();
+  const now = Date.now();
   const randomIcon = getRandomIcon();
   
   return {
     id: uuidv4(),
-    name,
+    title: name,
     boardId,
     description: '',
     iconName: randomIcon.name,
@@ -32,7 +32,7 @@ const createInitialBoard = (
   name: string,
   order: number
 ): Board => {
-  const now = new Date();
+  const now = Date.now();
   return {
     id: uuidv4(),
     name,
@@ -43,7 +43,7 @@ const createInitialBoard = (
 };
 
 export const createInitialBoards = (): Board[] => {
-  const now = new Date();
+  const now = Date.now();
   return [
     {
       id: uuidv4(),

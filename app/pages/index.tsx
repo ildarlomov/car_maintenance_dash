@@ -8,17 +8,20 @@ import { useAppState } from '../utils/hooks';
 import { hapticFeedback } from '../utils/telegram';
 import { showConfirmationDialog } from '../utils/notifications';
 import { calculateSystemHealthScore } from '../utils/analytics';
-import { Board } from '../types';
+import { Board, Task } from '../types';
 
 export default function Dashboard() {
   const { state, setState, isLoading } = useAppState();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isBoardModalOpen, setIsBoardModalOpen] = React.useState(false);
   const [editingBoard, setEditingBoard] = React.useState<Board | undefined>();
+  const [editingTask, setEditingTask] = React.useState<Task | undefined>();
+  const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
 
   const systemHealthScore = React.useMemo(() => {
     if (!state?.boards) return 100;
-    return calculateSystemHealthScore(state.boards);
+    const allTasks = state.boards.flatMap(board => board.tasks);
+    return calculateSystemHealthScore(allTasks);
   }, [state?.boards]);
 
   const filteredBoards = React.useMemo(() => {
@@ -47,10 +50,70 @@ export default function Dashboard() {
   const handleDeleteBoard = async (boardId: string) => {
     hapticFeedback.heavy();
     const confirmed = await showConfirmationDialog(
-      'Are you sure you want to delete this board? All tasks will be deleted as well.'
+      'Are you sure you want to delete this board?'
     );
     if (confirmed && state) {
-      const updatedBoards = state.boards.filter((board) => board.id !== boardId);
+      setState({
+        ...state,
+        boards: state.boards.filter((board) => board.id !== boardId),
+      });
+    }
+  };
+
+  const handleTaskStatusChange = (taskId: string, newStatus: Task['status']) => {
+    if (!state) return;
+    const now = Date.now();
+    const updatedBoards = state.boards.map(board => ({
+      ...board,
+      tasks: board.tasks.map(task =>
+        task.id === taskId
+          ? {
+              ...task,
+              status: newStatus,
+              lastInteraction: now,
+              lastStatusChange: now,
+            }
+          : task
+      ),
+    }));
+
+    setState({
+      ...state,
+      boards: updatedBoards,
+      statusChangeLogs: [
+        ...state.statusChangeLogs,
+        {
+          id: crypto.randomUUID(),
+          taskId,
+          taskName: state.boards.flatMap(b => b.tasks).find(t => t.id === taskId)?.title || '',
+          oldStatus: state.boards.flatMap(b => b.tasks).find(t => t.id === taskId)?.status || 'active',
+          newStatus,
+          timestamp: now,
+          userId: 'USER',
+        },
+      ],
+    });
+  };
+
+  const handleEditTask = (taskId: string) => {
+    hapticFeedback.light();
+    const task = state?.boards.flatMap(b => b.tasks).find(t => t.id === taskId);
+    if (task) {
+      setEditingTask(task);
+      setIsTaskModalOpen(true);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    hapticFeedback.heavy();
+    const confirmed = await showConfirmationDialog(
+      'Are you sure you want to delete this task?'
+    );
+    if (confirmed && state) {
+      const updatedBoards = state.boards.map(board => ({
+        ...board,
+        tasks: board.tasks.filter(task => task.id !== taskId),
+      }));
       setState({
         ...state,
         boards: updatedBoards,
@@ -60,7 +123,9 @@ export default function Dashboard() {
 
   const handleAddTask = (boardId: string) => {
     hapticFeedback.medium();
-    // TODO: Implement task creation modal
+    setEditingTask(undefined);
+    setEditingBoard(state?.boards.find(b => b.id === boardId));
+    setIsTaskModalOpen(true);
   };
 
   const handleResetData = async () => {
@@ -80,7 +145,7 @@ export default function Dashboard() {
   const handleBoardSubmit = (boardData: Omit<Board, 'id' | 'createdAt'>) => {
     if (!state) return;
 
-    const now = new Date();
+    const now = Date.now();
     if (editingBoard) {
       // Update existing board
       const updatedBoards = state.boards.map((b) =>
@@ -261,9 +326,13 @@ export default function Dashboard() {
               <BoardCard
                 key={board.id}
                 board={board}
+                tasks={board.tasks}
                 onEdit={handleEditBoard}
                 onDelete={handleDeleteBoard}
                 onAddTask={handleAddTask}
+                onTaskStatusChange={handleTaskStatusChange}
+                onTaskEdit={handleEditTask}
+                onTaskDelete={handleDeleteTask}
               />
             ))}
           </div>

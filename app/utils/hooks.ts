@@ -24,6 +24,7 @@ const initialBoards: Board[] = [
         criticalHours: 48,
         iconName: 'FaOilCan',
         iconLibrary: 'fa',
+        lastStatusChange: Date.now(),
       },
       {
         id: '2',
@@ -37,6 +38,7 @@ const initialBoards: Board[] = [
         criticalHours: 48,
         iconName: 'FaTachometerAlt',
         iconLibrary: 'fa',
+        lastStatusChange: Date.now(),
       },
     ],
     order: 0,
@@ -58,6 +60,7 @@ const initialBoards: Board[] = [
         criticalHours: 48,
         iconName: 'FaBrakeSystem',
         iconLibrary: 'fa',
+        lastStatusChange: Date.now(),
       },
     ],
     order: 1,
@@ -68,6 +71,8 @@ const initialBoards: Board[] = [
 const initialState: AppState = {
   boards: initialBoards,
   currentTime: Date.now(),
+  tasks: [],
+  statusChangeLogs: [],
 };
 
 // Hook for managing local storage state
@@ -136,6 +141,7 @@ export const useAppState = () => {
             return {
               ...task,
               status: newStatus,
+              lastStatusChange: currentTime,
             };
           }),
         }));
@@ -160,6 +166,8 @@ export const useAppState = () => {
           id: Date.now().toString(),
           name,
           tasks: [],
+          order: 0,
+          createdAt: Date.now(),
         },
       ],
     }));
@@ -196,6 +204,7 @@ export const useAppState = () => {
                   createdAt: Date.now(),
                   lastInteraction: Date.now(),
                   status: 'active',
+                  lastStatusChange: Date.now(),
                 } as Task,
               ],
             }

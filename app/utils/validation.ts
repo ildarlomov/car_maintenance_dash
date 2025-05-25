@@ -140,8 +140,8 @@ export const validateTask = (
 ): Record<string, string> => {
   const errors: Record<string, string> = {};
 
-  if (!task.name.trim()) {
-    errors.name = 'Task name is required';
+  if (!task.title.trim()) {
+    errors.title = 'Task title is required';
   }
 
   if (!task.iconName.trim()) {

@@ -26,6 +26,7 @@ export const BoardForm: React.FC<BoardFormProps> = ({
     onSubmit({
       name: name.trim(),
       order: board?.order || 0,
+      tasks: [],
     });
   };
 

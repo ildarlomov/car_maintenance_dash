@@ -26,13 +26,19 @@ export const Board: React.FC<BoardProps> = ({
     setMounted(true);
   }, []);
 
-  const handleTaskClick = (task: Task) => {
-    const newStatus = task.status === 'completed' ? 'active' : 'completed';
-    onTaskUpdate({
-      ...task,
-      status: newStatus,
-      lastInteraction: Date.now(),
-    });
+  const handleTaskClick = (taskId: string) => {
+    const task = board.tasks.find(t => t.id === taskId);
+    if (task) {
+      setIsModalOpen(true);
+      setEditingTask(task);
+    }
+  };
+
+  const handleTaskStatusChange = (taskId: string, newStatus: Task['status']) => {
+    const task = board.tasks.find(t => t.id === taskId);
+    if (task) {
+      onTaskUpdate({ ...task, status: newStatus });
+    }
   };
 
   const handleTaskLongPress = (task: Task) => {
@@ -96,8 +102,9 @@ export const Board: React.FC<BoardProps> = ({
           <TaskCard
             key={task.id}
             task={task}
-            onClick={handleTaskClick}
-            onLongPress={handleTaskLongPress}
+            onStatusChange={handleTaskStatusChange}
+            onEdit={handleTaskClick}
+            onDelete={onTaskDelete}
           />
         ))}
       </div>

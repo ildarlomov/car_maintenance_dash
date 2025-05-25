@@ -18,11 +18,11 @@ interface DefaultTaskSettings {
 export default function Settings() {
   const { state, setState, isLoading } = useAppState();
   const [settings, setSettings] = React.useState<DefaultTaskSettings>(() => ({
-    warningHours: state?.defaultTaskSettings?.warningHours ?? 24,
-    criticalHours: state?.defaultTaskSettings?.criticalHours ?? 48,
-    defaultStatus: state?.defaultTaskSettings?.defaultStatus ?? 'INACTIVE',
-    defaultIconName: state?.defaultTaskSettings?.defaultIconName ?? 'clock',
-    defaultIconLibrary: state?.defaultTaskSettings?.defaultIconLibrary ?? 'heroicons',
+    warningHours: 24,
+    criticalHours: 48,
+    defaultStatus: 'active',
+    defaultIconName: 'FaCar',
+    defaultIconLibrary: 'fa',
   }));
 
   const handleSave = () => {
@@ -31,7 +31,6 @@ export default function Settings() {
 
     setState({
       ...state,
-      defaultTaskSettings: settings,
     });
   };
 
@@ -40,9 +39,9 @@ export default function Settings() {
     setSettings({
       warningHours: 24,
       criticalHours: 48,
-      defaultStatus: 'INACTIVE',
-      defaultIconName: 'clock',
-      defaultIconLibrary: 'heroicons',
+      defaultStatus: 'active',
+      defaultIconName: 'FaCar',
+      defaultIconLibrary: 'fa',
     });
   };
 
@@ -181,33 +180,33 @@ export default function Settings() {
                   }}
                 >
                   <Button
-                    variant={settings.defaultStatus === 'INACTIVE' ? 'primary' : 'secondary'}
+                    variant={settings.defaultStatus === 'active' ? 'primary' : 'secondary'}
                     onClick={() =>
                       setSettings({
                         ...settings,
-                        defaultStatus: 'INACTIVE',
+                        defaultStatus: 'active',
                       })
                     }
                   >
-                    Inactive
+                    Active
                   </Button>
                   <Button
-                    variant={settings.defaultStatus === 'WARNING' ? 'warning' : 'secondary'}
+                    variant={settings.defaultStatus === 'warning' ? 'warning' : 'secondary'}
                     onClick={() =>
                       setSettings({
                         ...settings,
-                        defaultStatus: 'WARNING',
+                        defaultStatus: 'warning',
                       })
                     }
                   >
                     Warning
                   </Button>
                   <Button
-                    variant={settings.defaultStatus === 'CRITICAL' ? 'error' : 'secondary'}
+                    variant={settings.defaultStatus === 'critical' ? 'error' : 'secondary'}
                     onClick={() =>
                       setSettings({
                         ...settings,
-                        defaultStatus: 'CRITICAL',
+                        defaultStatus: 'critical',
                       })
                     }
                   >

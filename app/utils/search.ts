@@ -41,7 +41,7 @@ export const searchTasks = (
   const mergedOptions = { ...defaultOptions, ...options };
 
   return tasks.filter((task) => {
-    const nameMatch = matchesSearch(task.name, searchTerm, mergedOptions);
+    const nameMatch = matchesSearch(task.title, searchTerm, mergedOptions);
     if (nameMatch) return true;
 
     if (mergedOptions.searchInDescription && task.description) {
@@ -92,7 +92,7 @@ export const filterTasks = (
 
     // Filter by active state
     if (options.isActive !== undefined) {
-      if (task.isActive !== options.isActive) return false;
+      if ((task.status === 'active') !== options.isActive) return false;
     }
 
     // Filter by date range
@@ -125,12 +125,6 @@ export const sortTasks = (
         : bValue.localeCompare(aValue);
     }
 
-    if (aValue instanceof Date && bValue instanceof Date) {
-      return ascending
-        ? aValue.getTime() - bValue.getTime()
-        : bValue.getTime() - aValue.getTime();
-    }
-
     if (typeof aValue === 'number' && typeof bValue === 'number') {
       return ascending ? aValue - bValue : bValue - aValue;
     }
@@ -156,7 +150,7 @@ export const groupTasksByStatus = (tasks: Task[]): Record<string, Task[]> => {
 
 export const groupTasksByActiveState = (tasks: Task[]): Record<string, Task[]> => {
   return tasks.reduce((groups, task) => {
-    const state = task.isActive ? 'active' : 'inactive';
+    const state = task.status === 'active' ? 'active' : 'inactive';
     if (!groups[state]) {
       groups[state] = [];
     }

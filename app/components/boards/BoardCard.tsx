@@ -140,7 +140,7 @@ export const BoardCard: React.FC<BoardCardProps> = ({
               Active tasks:
             </span>
             <span style={{ color: '#000000', fontSize: '14px', fontWeight: 600 }}>
-              {boardTasks.filter((task) => task.status !== 'inactive').length}
+              {boardTasks.filter((task) => task.status === 'active').length}
             </span>
           </div>
           <div

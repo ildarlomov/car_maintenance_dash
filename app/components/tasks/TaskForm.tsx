@@ -1,5 +1,5 @@
 import React from 'react';
-import { Task } from '../../types';
+import { Task, IconLibrary } from '../../types';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { validateTask } from '../../utils/validation';
@@ -19,10 +19,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   onSubmit,
   onCancel,
 }) => {
-  const [name, setName] = React.useState(task?.name || '');
+  const [title, setTitle] = React.useState(task?.title || '');
   const [warningHours, setWarningHours] = React.useState(task?.warningHours || 24);
   const [criticalHours, setCriticalHours] = React.useState(task?.criticalHours || 48);
-  const [status, setStatus] = React.useState<Task['status']>(task?.status || 'inactive');
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -30,14 +29,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     hapticFeedback.medium();
 
     const taskData = {
-      name,
+      title,
       description: '', // Empty description as it's no longer needed
       iconName: 'FaCar',
-      iconLibrary: 'fa',
+      iconLibrary: 'fa' as IconLibrary,
       boardId,
       warningHours,
       criticalHours,
-      status,
+      status: 'active' as const,
     };
 
     const validationErrors = validateTask(taskData);
@@ -59,10 +58,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       }}
     >
       <Input
-        label="Task Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        error={errors.name}
+        label="Task Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        error={errors.title}
         required
       />
       <div
@@ -90,50 +89,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           required
           min={1}
         />
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-        }}
-      >
-        <label
-          style={{
-            fontSize: '14px',
-            color: '#666666',
-          }}
-        >
-          Status
-        </label>
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-          }}
-        >
-          <Button
-            type="button"
-            variant={status === 'inactive' ? 'primary' : 'secondary'}
-            onClick={() => setStatus('inactive')}
-          >
-            Inactive
-          </Button>
-          <Button
-            type="button"
-            variant={status === 'warning' ? 'warning' : 'secondary'}
-            onClick={() => setStatus('warning')}
-          >
-            Warning
-          </Button>
-          <Button
-            type="button"
-            variant={status === 'critical' ? 'error' : 'secondary'}
-            onClick={() => setStatus('critical')}
-          >
-            Critical
-          </Button>
-        </div>
       </div>
       <div
         style={{

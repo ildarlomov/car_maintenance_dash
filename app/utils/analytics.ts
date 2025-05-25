@@ -48,8 +48,7 @@ export const calculateTaskStatistics = (tasks: Task[]): TaskStatistics => {
     return acc;
   }, {} as Record<string, number>);
 
-  const activeTasks = tasks.filter((task) => task.status !== 'inactive');
-  const inactiveTasks = tasks.filter((task) => task.status === 'inactive');
+  const activeTasks = tasks.filter((task) => task.status === 'active');
 
   const totalWarningHours = tasks.reduce((sum, task) => sum + task.warningHours, 0);
   const totalCriticalHours = tasks.reduce((sum, task) => sum + task.criticalHours, 0);
@@ -69,7 +68,7 @@ export const calculateTaskStatistics = (tasks: Task[]): TaskStatistics => {
   return {
     total: tasks.length,
     active: activeTasks.length,
-    inactive: inactiveTasks.length,
+    inactive: tasks.length - activeTasks.length,
     byStatus,
     averageWarningHours: totalWarningHours / tasks.length,
     averageCriticalHours: totalCriticalHours / tasks.length,
@@ -113,10 +112,10 @@ export const calculateStatusChangeStatistics = (
   };
 
   const timeBetweenChanges = logs
-    .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+    .sort((a, b) => a.timestamp - b.timestamp)
     .map((log, index, array) => {
       if (index === 0) return 0;
-      return log.timestamp.getTime() - array[index - 1].timestamp.getTime();
+      return log.timestamp - array[index - 1].timestamp;
     })
     .filter((time) => time > 0);
 
@@ -130,7 +129,7 @@ export const calculateStatusChangeStatistics = (
       const task = tasks.find((t) => t.id === taskId);
       return {
         taskId,
-        taskName: task?.name || 'Unknown',
+        taskName: task?.title || 'Unknown',
         count,
       };
     })

@@ -30,7 +30,7 @@ export default function TaskDetail() {
     if (!state?.statusChangeLogs || !id) return [];
     return state.statusChangeLogs
       .filter((log) => log.taskId === id)
-      .sort((a, b) => b.changedAt.getTime() - a.changedAt.getTime());
+      .sort((a, b) => b.timestamp - a.timestamp);
   }, [state?.statusChangeLogs, id]);
 
   const healthScore = React.useMemo(() => {
@@ -74,7 +74,7 @@ export default function TaskDetail() {
   const handleStatusChange = (newStatus: TaskStatus) => {
     if (!state || !task) return;
 
-    const now = new Date();
+    const now = Date.now();
     const updatedBoards = state.boards.map((board) =>
       board.tasks.some((t) => t.id === task.id)
         ? {
@@ -101,20 +101,20 @@ export default function TaskDetail() {
         {
           id: crypto.randomUUID(),
           taskId: task.id,
-          taskName: task.name,
-          previousStatus: task.status,
+          taskName: task.title,
+          oldStatus: task.status,
           newStatus,
-          changedAt: now,
-          changedBy: 'USER',
+          timestamp: now,
+          userId: 'USER',
         },
       ],
     });
   };
 
-  const handleTaskSubmit = (taskData: Omit<Task, 'id' | 'createdAt' | 'lastStatusChange' | 'lastInteraction'>) => {
+  const handleTaskSubmit = (taskData: Partial<Task>) => {
     if (!state || !task) return;
 
-    const now = new Date();
+    const now = Date.now();
     const updatedBoards = state.boards.map((board) =>
       board.tasks.some((t) => t.id === task.id)
         ? {
@@ -225,7 +225,7 @@ export default function TaskDetail() {
                 fontWeight: 600,
               }}
             >
-              {task.name}
+              {task.title}
             </h1>
           </div>
           <div
@@ -328,7 +328,7 @@ export default function TaskDetail() {
                       fontSize: '16px',
                     }}
                   >
-                    {getRelativeTimeString(task.createdAt)}
+                    {getRelativeTimeString(new Date(task.createdAt))}
                   </p>
                 </div>
                 <div>
@@ -346,7 +346,7 @@ export default function TaskDetail() {
                       fontSize: '16px',
                     }}
                   >
-                    {getRelativeTimeString(task.lastInteraction)}
+                    {getRelativeTimeString(new Date(task.lastInteraction))}
                   </p>
                 </div>
                 <div>
@@ -436,20 +436,20 @@ export default function TaskDetail() {
                   }}
                 >
                   <Button
-                    variant={task.status === 'INACTIVE' ? 'primary' : 'secondary'}
-                    onClick={() => handleStatusChange('INACTIVE')}
+                    variant={task.status === 'active' ? 'primary' : 'secondary'}
+                    onClick={() => handleStatusChange('active')}
                   >
-                    Inactive
+                    Active
                   </Button>
                   <Button
-                    variant={task.status === 'WARNING' ? 'warning' : 'secondary'}
-                    onClick={() => handleStatusChange('WARNING')}
+                    variant={task.status === 'warning' ? 'warning' : 'secondary'}
+                    onClick={() => handleStatusChange('warning')}
                   >
                     Warning
                   </Button>
                   <Button
-                    variant={task.status === 'CRITICAL' ? 'error' : 'secondary'}
-                    onClick={() => handleStatusChange('CRITICAL')}
+                    variant={task.status === 'critical' ? 'error' : 'secondary'}
+                    onClick={() => handleStatusChange('critical')}
                   >
                     Critical
                   </Button>
@@ -468,9 +468,9 @@ export default function TaskDetail() {
                       margin: '4px 0 0',
                       fontSize: '16px',
                       color:
-                        task.status === 'INACTIVE'
+                        task.status === 'active'
                           ? '#4CAF50'
-                          : task.status === 'WARNING'
+                          : task.status === 'warning'
                           ? '#FFA726'
                           : '#F44336',
                       fontWeight: 600,
@@ -494,7 +494,7 @@ export default function TaskDetail() {
                       fontSize: '16px',
                     }}
                   >
-                    {getRelativeTimeString(task.lastStatusChange)}
+                    {getRelativeTimeString(new Date(task.lastStatusChange))}
                   </p>
                 </div>
               </div>
@@ -556,7 +556,7 @@ export default function TaskDetail() {
                             fontWeight: 600,
                           }}
                         >
-                          {log.previousStatus} → {log.newStatus}
+                          {log.oldStatus} → {log.newStatus}
                         </span>
                         <span
                           style={{
@@ -564,7 +564,7 @@ export default function TaskDetail() {
                             color: '#666666',
                           }}
                         >
-                          {getRelativeTimeString(log.changedAt)}
+                          {getRelativeTimeString(new Date(log.timestamp))}
                         </span>
                       </div>
                       <span
@@ -573,7 +573,7 @@ export default function TaskDetail() {
                           color: '#666666',
                         }}
                       >
-                        Changed by {log.changedBy}
+                        Changed by {log.userId}
                       </span>
                     </div>
                   ))

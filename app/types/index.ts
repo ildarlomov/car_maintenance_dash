@@ -1,10 +1,12 @@
 export type IconLibrary = 'fa' | 'md' | 'io' | 'bi' | 'hi';
 
+export type TaskStatus = 'active' | 'warning' | 'critical' | 'completed';
+
 export interface Task {
   id: string;
   title: string;
   description: string;
-  status: 'active' | 'warning' | 'critical' | 'completed';
+  status: TaskStatus;
   boardId: string;
   createdAt: number;
   lastInteraction: number;

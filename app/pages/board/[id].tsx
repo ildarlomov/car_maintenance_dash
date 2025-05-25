@@ -28,7 +28,7 @@ export default function BoardDetail() {
     if (!board) return [];
     if (!searchTerm) return board.tasks;
     return board.tasks.filter((task) =>
-      task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [board, searchTerm]);
@@ -47,7 +47,7 @@ export default function BoardDetail() {
   const handleTaskStatusChange = (taskId: string, newStatus: Task['status']) => {
     if (!state || !board) return;
 
-    const now = new Date();
+    const now = Date.now();
     const task = board.tasks.find((t) => t.id === taskId);
     if (!task) return;
 
@@ -79,7 +79,7 @@ export default function BoardDetail() {
         {
           id: crypto.randomUUID(),
           taskId,
-          taskName: task.name,
+          taskName: task.title,
           oldStatus: task.status,
           newStatus,
           timestamp: now,
@@ -120,7 +120,7 @@ export default function BoardDetail() {
     }
   };
 
-  const handleTaskSubmit = (taskData: Omit<Task, 'id' | 'lastInteraction' | 'lastStatusChange'>) => {
+  const handleTaskSubmit = (taskData: Partial<Task>) => {
     if (editingTask) {
       // Update existing task
       const updatedTasks = state.tasks.map(task =>
@@ -128,7 +128,7 @@ export default function BoardDetail() {
           ? {
               ...task,
               ...taskData,
-              lastStatusChange: new Date(),
+              lastStatusChange: Date.now(),
             }
           : task
       );
@@ -141,11 +141,12 @@ export default function BoardDetail() {
       const newTask: Task = {
         id: crypto.randomUUID(),
         ...taskData,
-        lastInteraction: new Date(),
-        lastStatusChange: new Date(),
+        lastInteraction: Date.now(),
+        lastStatusChange: Date.now(),
         iconName: taskData.iconName || 'FaCar',
         iconLibrary: taskData.iconLibrary || 'fa',
-      };
+        status: 'active',
+      } as Task;
       setState({
         ...state,
         tasks: [...state.tasks, newTask],
@@ -153,6 +154,37 @@ export default function BoardDetail() {
     }
     setIsTaskModalOpen(false);
     setEditingTask(undefined);
+  };
+
+  const handleStatusChange = (taskId: string, newStatus: Task['status']) => {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (task) {
+      const updatedTasks = state.tasks.map(t =>
+        t.id === taskId
+          ? {
+              ...t,
+              status: newStatus,
+              lastStatusChange: Date.now(),
+            }
+          : t
+      );
+      setState({
+        ...state,
+        tasks: updatedTasks,
+        statusChangeLogs: [
+          ...state.statusChangeLogs,
+          {
+            id: crypto.randomUUID(),
+            taskId,
+            taskName: task.title,
+            oldStatus: task.status,
+            newStatus,
+            timestamp: Date.now(),
+            userId: 'USER',
+          },
+        ],
+      });
+    }
   };
 
   if (isLoading) {
