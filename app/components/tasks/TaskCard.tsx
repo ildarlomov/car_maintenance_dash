@@ -5,6 +5,11 @@ import { Button } from '../ui/Button';
 import { getRelativeTimeString } from '../../utils/date';
 import { calculateTaskHealthScore } from '../../utils/analytics';
 import { hapticFeedback } from '../../utils/telegram';
+import * as FaIcons from 'react-icons/fa';
+import * as MdIcons from 'react-icons/md';
+import * as IoIcons from 'react-icons/io5';
+import * as BiIcons from 'react-icons/bi';
+import * as HiIcons from 'react-icons/hi';
 
 interface TaskCardProps {
   task: Task;
@@ -24,11 +29,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   const getStatusColor = () => {
     switch (task.status) {
-      case 'INACTIVE':
+      case 'inactive':
         return '#9E9E9E';
-      case 'WARNING':
+      case 'warning':
         return '#FF9800';
-      case 'CRITICAL':
+      case 'critical':
         return '#F44336';
       default:
         return '#2196F3';
@@ -56,6 +61,28 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     onDelete(task.id);
   };
 
+  const getIconComponent = () => {
+    const iconName = task.iconName || 'FaCar';
+    const iconLibrary = task.iconLibrary || 'fa';
+
+    switch (iconLibrary) {
+      case 'fa':
+        return FaIcons[iconName as keyof typeof FaIcons] || FaIcons.FaCar;
+      case 'md':
+        return MdIcons[iconName as keyof typeof MdIcons] || MdIcons.MdDashboard;
+      case 'io':
+        return IoIcons[iconName as keyof typeof IoIcons] || IoIcons.IoCarSport;
+      case 'bi':
+        return BiIcons[iconName as keyof typeof BiIcons] || BiIcons.BiCar;
+      case 'hi':
+        return HiIcons[iconName as keyof typeof HiIcons] || HiIcons.HiCar;
+      default:
+        return FaIcons.FaCar;
+    }
+  };
+
+  const IconComponent = getIconComponent();
+
   return (
     <Card variant="elevated">
       <CardHeader>
@@ -66,15 +93,29 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             alignItems: 'center',
           }}
         >
-          <h3
+          <div
             style={{
-              margin: 0,
-              fontSize: '18px',
-              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
             }}
           >
-            {task.name}
-          </h3>
+            <IconComponent
+              style={{
+                fontSize: '24px',
+                color: getStatusColor(),
+              }}
+            />
+            <h3
+              style={{
+                margin: 0,
+                fontSize: '18px',
+                fontWeight: 600,
+              }}
+            >
+              {task.name}
+            </h3>
+          </div>
           <div
             style={{
               width: '12px',
@@ -170,24 +211,24 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         <Button
           variant="primary"
           size="small"
-          onClick={() => handleStatusChange('INACTIVE')}
-          disabled={task.status === 'INACTIVE'}
+          onClick={() => handleStatusChange('inactive')}
+          disabled={task.status === 'inactive'}
         >
           Mark Inactive
         </Button>
         <Button
           variant="warning"
           size="small"
-          onClick={() => handleStatusChange('WARNING')}
-          disabled={task.status === 'WARNING'}
+          onClick={() => handleStatusChange('warning')}
+          disabled={task.status === 'warning'}
         >
           Mark Warning
         </Button>
         <Button
           variant="error"
           size="small"
-          onClick={() => handleStatusChange('CRITICAL')}
-          disabled={task.status === 'CRITICAL'}
+          onClick={() => handleStatusChange('critical')}
+          disabled={task.status === 'critical'}
         >
           Mark Critical
         </Button>

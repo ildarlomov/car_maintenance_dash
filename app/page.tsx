@@ -11,13 +11,16 @@ import { hapticFeedback } from '@/app/utils/telegram';
 import { showConfirmationDialog } from '@/app/utils/notifications';
 import { calculateSystemHealthScore } from '@/app/utils/analytics';
 import { createInitialBoards, createInitialTasks } from '@/app/utils/initialData';
-import { Board } from '@/app/types';
+import { Board, Task } from '@/app/types';
+import { TaskModal } from '@/app/components/tasks/TaskModal';
 
 export default function Dashboard() {
   const { state, setState, isLoading } = useAppState();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isBoardModalOpen, setIsBoardModalOpen] = React.useState(false);
   const [editingBoard, setEditingBoard] = React.useState<Board | undefined>();
+  const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
+  const [selectedBoardId, setSelectedBoardId] = React.useState<string | null>(null);
 
   const systemHealthScore = React.useMemo(() => {
     if (!state?.tasks) return 100;
@@ -63,7 +66,8 @@ export default function Dashboard() {
 
   const handleAddTask = (boardId: string) => {
     hapticFeedback.medium();
-    // TODO: Implement task creation modal
+    setSelectedBoardId(boardId);
+    setIsTaskModalOpen(true);
   };
 
   const handleResetData = async () => {
@@ -107,11 +111,85 @@ export default function Dashboard() {
         ...boardData,
         id: crypto.randomUUID(),
         createdAt: now,
+        tasks: [], // Initialize empty tasks array
       };
 
       setState({
         ...state,
         boards: [...state.boards, newBoard],
+      });
+    }
+  };
+
+  const handleTaskSubmit = (taskData: Omit<Task, 'id' | 'createdAt' | 'lastInteraction' | 'lastStatusChange'>) => {
+    if (!state || !selectedBoardId) return;
+
+    const now = new Date();
+    const newTask: Task = {
+      ...taskData,
+      id: crypto.randomUUID(),
+      createdAt: now,
+      lastInteraction: now,
+      lastStatusChange: now,
+    };
+
+    setState({
+      ...state,
+      tasks: [...state.tasks, newTask],
+    });
+  };
+
+  const handleTaskStatusChange = (taskId: string, newStatus: Task['status']) => {
+    if (!state) return;
+
+    const now = new Date();
+    const updatedTasks = state.tasks.map((task) =>
+      task.id === taskId
+        ? {
+            ...task,
+            status: newStatus,
+            lastInteraction: now,
+            lastStatusChange: now,
+          }
+        : task
+    );
+
+    setState({
+      ...state,
+      tasks: updatedTasks,
+      statusChangeLogs: [
+        ...state.statusChangeLogs,
+        {
+          id: crypto.randomUUID(),
+          taskId,
+          taskName: state.tasks.find(t => t.id === taskId)?.name || '',
+          oldStatus: state.tasks.find(t => t.id === taskId)?.status || 'inactive',
+          newStatus,
+          timestamp: now,
+          userId: 'USER',
+        },
+      ],
+    });
+  };
+
+  const handleTaskEdit = (taskId: string) => {
+    hapticFeedback.light();
+    const task = state?.tasks.find((t) => t.id === taskId);
+    if (task) {
+      setSelectedBoardId(task.boardId);
+      setIsTaskModalOpen(true);
+    }
+  };
+
+  const handleTaskDelete = async (taskId: string) => {
+    hapticFeedback.heavy();
+    const confirmed = await showConfirmationDialog(
+      'Are you sure you want to delete this task?'
+    );
+    if (confirmed && state) {
+      setState({
+        ...state,
+        tasks: state.tasks.filter((task) => task.id !== taskId),
       });
     }
   };
@@ -266,10 +344,13 @@ export default function Dashboard() {
               <BoardCard
                 key={board.id}
                 board={board}
-                tasks={state?.tasks.filter(task => task.boardId === board.id) || []}
+                tasks={state?.tasks || []}
                 onEdit={handleEditBoard}
                 onDelete={handleDeleteBoard}
                 onAddTask={handleAddTask}
+                onTaskStatusChange={handleTaskStatusChange}
+                onTaskEdit={handleTaskEdit}
+                onTaskDelete={handleTaskDelete}
               />
             ))}
           </div>
@@ -280,6 +361,13 @@ export default function Dashboard() {
           onClose={() => setIsBoardModalOpen(false)}
           board={editingBoard}
           onSubmit={handleBoardSubmit}
+        />
+
+        <TaskModal
+          isOpen={isTaskModalOpen}
+          onClose={() => setIsTaskModalOpen(false)}
+          boardId={selectedBoardId || ''}
+          onSubmit={handleTaskSubmit}
         />
       </div>
     </Layout>

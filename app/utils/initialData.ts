@@ -23,42 +23,57 @@ const createInitialTask = (
     criticalHours,
     status,
     lastInteraction: now,
+    lastStatusChange: now,
     createdAt: now,
+  };
+};
+
+const createInitialBoard = (
+  name: string,
+  order: number
+): Board => {
+  const now = new Date();
+  return {
+    id: uuidv4(),
+    name,
+    order,
+    createdAt: now,
+    tasks: [],
   };
 };
 
 export const createInitialBoards = (): Board[] => {
   const now = new Date();
-  
-  const healthBoard: Board = {
-    id: uuidv4(),
-    name: 'Health',
-    order: 0,
-    createdAt: now,
-  };
-
-  const selfCareBoard: Board = {
-    id: uuidv4(),
-    name: 'Self Care',
-    order: 1,
-    createdAt: now,
-  };
-
-  const homeBoard: Board = {
-    id: uuidv4(),
-    name: 'Home',
-    order: 2,
-    createdAt: now,
-  };
-
-  const sportBoard: Board = {
-    id: uuidv4(),
-    name: 'Sports',
-    order: 3,
-    createdAt: now,
-  };
-
-  return [healthBoard, selfCareBoard, homeBoard, sportBoard];
+  return [
+    {
+      id: uuidv4(),
+      name: 'Health',
+      order: 0,
+      createdAt: now,
+      tasks: [],
+    },
+    {
+      id: uuidv4(),
+      name: 'Self Care',
+      order: 1,
+      createdAt: now,
+      tasks: [],
+    },
+    {
+      id: uuidv4(),
+      name: 'Home',
+      order: 2,
+      createdAt: now,
+      tasks: [],
+    },
+    {
+      id: uuidv4(),
+      name: 'Sports',
+      order: 3,
+      createdAt: now,
+      tasks: [],
+    },
+  ];
 };
 
 export const createInitialTasks = (boards: Board[]): Task[] => {

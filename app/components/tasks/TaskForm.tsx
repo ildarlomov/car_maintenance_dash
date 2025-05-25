@@ -1,9 +1,10 @@
 import React from 'react';
-import { Task, TaskStatus } from '../../types';
+import { Task } from '../../types';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { validateTask } from '../../utils/validation';
 import { hapticFeedback } from '../../utils/telegram';
+import { FaCar } from 'react-icons/fa';
 
 interface TaskFormProps {
   boardId: string;
@@ -19,13 +20,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   onCancel,
 }) => {
   const [name, setName] = React.useState(task?.name || '');
-  const [description, setDescription] = React.useState(task?.description || '');
-  const [iconName, setIconName] = React.useState(task?.iconName || '');
-  const [iconLibrary, setIconLibrary] = React.useState(task?.iconLibrary || '');
   const [warningHours, setWarningHours] = React.useState(task?.warningHours || 24);
   const [criticalHours, setCriticalHours] = React.useState(task?.criticalHours || 48);
-  const [status, setStatus] = React.useState<TaskStatus>(task?.status || 'INACTIVE');
-  const [isActive, setIsActive] = React.useState(task?.isActive ?? true);
+  const [status, setStatus] = React.useState<Task['status']>(task?.status || 'inactive');
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,14 +31,13 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
     const taskData = {
       name,
-      description,
-      iconName,
-      iconLibrary,
+      description: '', // Empty description as it's no longer needed
+      iconName: 'FaCar',
+      iconLibrary: 'fa',
       boardId,
       warningHours,
       criticalHours,
       status,
-      isActive,
     };
 
     const validationErrors = validateTask(taskData);
@@ -69,34 +65,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({
         error={errors.name}
         required
       />
-      <Input
-        label="Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        error={errors.description}
-      />
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '16px',
-        }}
-      >
-        <Input
-          label="Icon Name"
-          value={iconName}
-          onChange={(e) => setIconName(e.target.value)}
-          error={errors.iconName}
-          required
-        />
-        <Input
-          label="Icon Library"
-          value={iconLibrary}
-          onChange={(e) => setIconLibrary(e.target.value)}
-          error={errors.iconLibrary}
-          required
-        />
-      </div>
       <div
         style={{
           display: 'grid',
@@ -146,53 +114,26 @@ export const TaskForm: React.FC<TaskFormProps> = ({
         >
           <Button
             type="button"
-            variant={status === 'INACTIVE' ? 'primary' : 'secondary'}
-            onClick={() => setStatus('INACTIVE')}
+            variant={status === 'inactive' ? 'primary' : 'secondary'}
+            onClick={() => setStatus('inactive')}
           >
             Inactive
           </Button>
           <Button
             type="button"
-            variant={status === 'WARNING' ? 'warning' : 'secondary'}
-            onClick={() => setStatus('WARNING')}
+            variant={status === 'warning' ? 'warning' : 'secondary'}
+            onClick={() => setStatus('warning')}
           >
             Warning
           </Button>
           <Button
             type="button"
-            variant={status === 'CRITICAL' ? 'error' : 'secondary'}
-            onClick={() => setStatus('CRITICAL')}
+            variant={status === 'critical' ? 'error' : 'secondary'}
+            onClick={() => setStatus('critical')}
           >
             Critical
           </Button>
         </div>
-      </div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}
-      >
-        <input
-          type="checkbox"
-          id="isActive"
-          checked={isActive}
-          onChange={(e) => setIsActive(e.target.checked)}
-          style={{
-            width: '16px',
-            height: '16px',
-          }}
-        />
-        <label
-          htmlFor="isActive"
-          style={{
-            fontSize: '14px',
-            color: '#666666',
-          }}
-        >
-          Active
-        </label>
       </div>
       <div
         style={{

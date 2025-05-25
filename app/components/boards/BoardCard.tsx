@@ -4,6 +4,7 @@ import { Card, CardHeader, CardContent, CardFooter } from '@/app/components/ui/C
 import { Button } from '@/app/components/ui/Button';
 import { calculateBoardHealthScore } from '@/app/utils/analytics';
 import { hapticFeedback } from '@/app/utils/telegram';
+import { TaskCard } from '../tasks/TaskCard';
 
 interface BoardCardProps {
   board: Board;
@@ -11,6 +12,9 @@ interface BoardCardProps {
   onEdit: (boardId: string) => void;
   onDelete: (boardId: string) => void;
   onAddTask: (boardId: string) => void;
+  onTaskStatusChange?: (taskId: string, newStatus: Task['status']) => void;
+  onTaskEdit?: (taskId: string) => void;
+  onTaskDelete?: (taskId: string) => void;
 }
 
 export const BoardCard: React.FC<BoardCardProps> = ({
@@ -19,6 +23,9 @@ export const BoardCard: React.FC<BoardCardProps> = ({
   onEdit,
   onDelete,
   onAddTask,
+  onTaskStatusChange,
+  onTaskEdit,
+  onTaskDelete,
 }) => {
   const boardTasks = tasks.filter(task => task.boardId === board.id);
   const healthScore = calculateBoardHealthScore(boardTasks);
@@ -150,6 +157,26 @@ export const BoardCard: React.FC<BoardCardProps> = ({
               {new Date(board.createdAt).toLocaleDateString()}
             </span>
           </div>
+          {boardTasks.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                marginTop: '8px',
+              }}
+            >
+              {boardTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onStatusChange={onTaskStatusChange}
+                  onEdit={onTaskEdit}
+                  onDelete={onTaskDelete}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter>

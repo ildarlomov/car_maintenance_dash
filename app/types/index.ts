@@ -3,25 +3,24 @@ export interface Board {
   name: string;
   order: number;
   createdAt: Date;
+  tasks: Task[];
 }
 
 export interface Task {
   id: string;
-  boardId: string;
   name: string;
-  description: string;
+  description?: string;
   status: 'inactive' | 'warning' | 'critical';
-  warningHours: number;
-  criticalHours: number;
   lastInteraction: Date;
-  createdAt: Date;
+  lastStatusChange: Date;
   iconName?: string;
-  iconLibrary?: string;
+  iconLibrary?: 'fa' | 'md' | 'io' | 'bi' | 'hi';
 }
 
 export interface StatusChangeLog {
   id: string;
   taskId: string;
+  taskName: string;
   oldStatus: Task['status'];
   newStatus: Task['status'];
   timestamp: Date;

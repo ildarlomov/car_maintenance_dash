@@ -50,15 +50,17 @@ export const useAppState = () => {
       if (savedState) {
         try {
           const parsedState = JSON.parse(savedState);
-          // Convert string dates back to Date objects
+          // Convert string dates back to Date objects and ensure boards have tasks array
           parsedState.boards = parsedState.boards.map((board: any) => ({
             ...board,
             createdAt: new Date(board.createdAt),
+            tasks: board.tasks || [], // Ensure tasks array exists
           }));
           parsedState.tasks = parsedState.tasks.map((task: any) => ({
             ...task,
             createdAt: new Date(task.createdAt),
             lastInteraction: new Date(task.lastInteraction),
+            lastStatusChange: new Date(task.lastStatusChange),
           }));
           parsedState.statusChangeLogs = parsedState.statusChangeLogs.map((log: any) => ({
             ...log,

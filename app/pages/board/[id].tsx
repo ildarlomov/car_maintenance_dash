@@ -8,7 +8,8 @@ import { Input } from '../../components/ui/Input';
 import { useAppState } from '../../utils/hooks';
 import { hapticFeedback } from '../../utils/telegram';
 import { showConfirmationDialog } from '../../utils/notifications';
-import { Task, TaskStatus } from '../../types';
+import { Task } from '../../types';
+import { AppState } from '../../types';
 
 export default function BoardDetail() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function BoardDetail() {
     setIsTaskModalOpen(true);
   };
 
-  const handleTaskStatusChange = (taskId: string, newStatus: TaskStatus) => {
+  const handleTaskStatusChange = (taskId: string, newStatus: Task['status']) => {
     if (!state || !board) return;
 
     const now = new Date();
@@ -79,10 +80,10 @@ export default function BoardDetail() {
           id: crypto.randomUUID(),
           taskId,
           taskName: task.name,
-          previousStatus: task.status,
+          oldStatus: task.status,
           newStatus,
-          changedAt: now,
-          changedBy: 'USER',
+          timestamp: now,
+          userId: 'USER',
         },
       ],
     });
@@ -103,12 +104,11 @@ export default function BoardDetail() {
       'Are you sure you want to delete this task?'
     );
     if (confirmed && state && board) {
-      const updatedTasks = board.tasks.filter((task) => task.id !== taskId);
       const updatedBoards = state.boards.map((b) =>
         b.id === board.id
           ? {
               ...b,
-              tasks: updatedTasks,
+              tasks: b.tasks.filter((task) => task.id !== taskId),
             }
           : b
       );
@@ -120,59 +120,39 @@ export default function BoardDetail() {
     }
   };
 
-  const handleTaskSubmit = (taskData: Omit<Task, 'id' | 'createdAt' | 'lastStatusChange' | 'lastInteraction'>) => {
-    if (!state || !board) return;
-
-    const now = new Date();
+  const handleTaskSubmit = (taskData: Omit<Task, 'id' | 'lastInteraction' | 'lastStatusChange'>) => {
     if (editingTask) {
       // Update existing task
-      const updatedTasks = board.tasks.map((t) =>
-        t.id === editingTask.id
+      const updatedTasks = state.tasks.map(task =>
+        task.id === editingTask.id
           ? {
-              ...t,
+              ...task,
               ...taskData,
-              lastInteraction: now,
+              lastStatusChange: new Date(),
             }
-          : t
+          : task
       );
-
-      const updatedBoards = state.boards.map((b) =>
-        b.id === board.id
-          ? {
-              ...b,
-              tasks: updatedTasks,
-            }
-          : b
-      );
-
       setState({
         ...state,
-        boards: updatedBoards,
+        tasks: updatedTasks,
       });
     } else {
       // Create new task
       const newTask: Task = {
-        ...taskData,
         id: crypto.randomUUID(),
-        createdAt: now,
-        lastStatusChange: now,
-        lastInteraction: now,
+        ...taskData,
+        lastInteraction: new Date(),
+        lastStatusChange: new Date(),
+        iconName: taskData.iconName || 'FaCar',
+        iconLibrary: taskData.iconLibrary || 'fa',
       };
-
-      const updatedBoards = state.boards.map((b) =>
-        b.id === board.id
-          ? {
-              ...b,
-              tasks: [...b.tasks, newTask],
-            }
-          : b
-      );
-
       setState({
         ...state,
-        boards: updatedBoards,
+        tasks: [...state.tasks, newTask],
       });
     }
+    setIsTaskModalOpen(false);
+    setEditingTask(undefined);
   };
 
   if (isLoading) {
