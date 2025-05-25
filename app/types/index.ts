@@ -1,20 +1,23 @@
-export interface Board {
-  id: string;
-  name: string;
-  order: number;
-  createdAt: Date;
-  tasks: Task[];
-}
+export type IconLibrary = 'fa' | 'md' | 'io' | 'bi' | 'hi';
 
 export interface Task {
   id: string;
+  title: string;
+  description: string;
+  status: 'active' | 'warning' | 'critical' | 'completed';
+  boardId: string;
+  createdAt: number;
+  lastInteraction: number;
+  warningHours: number;
+  criticalHours: number;
+  iconLibrary: IconLibrary;
+  iconName: string;
+}
+
+export interface Board {
+  id: string;
   name: string;
-  description?: string;
-  status: 'inactive' | 'warning' | 'critical';
-  lastInteraction: Date;
-  lastStatusChange: Date;
-  iconName?: string;
-  iconLibrary?: 'fa' | 'md' | 'io' | 'bi' | 'hi';
+  tasks: Task[];
 }
 
 export interface StatusChangeLog {
@@ -29,13 +32,5 @@ export interface StatusChangeLog {
 
 export interface AppState {
   boards: Board[];
-  tasks: Task[];
-  statusChangeLogs: StatusChangeLog[];
-  defaultTaskSettings?: {
-    warningHours: number;
-    criticalHours: number;
-    defaultStatus: Task['status'];
-    defaultIconName?: string;
-    defaultIconLibrary?: string;
-  };
+  currentTime: number;
 } 

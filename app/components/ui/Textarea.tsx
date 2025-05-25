@@ -1,38 +1,34 @@
+'use client';
+
 import React from 'react';
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
+  error?: string;
 }
 
-export const Textarea: React.FC<TextareaProps> = ({ label, ...props }) => {
+export const Textarea: React.FC<TextareaProps> = ({
+  label,
+  error,
+  className = '',
+  ...props
+}) => {
   return (
-    <div>
+    <div className="w-full">
       {label && (
-        <label
-          style={{
-            display: 'block',
-            marginBottom: '4px',
-            fontSize: '14px',
-            fontWeight: 500,
-          }}
-        >
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           {label}
         </label>
       )}
       <textarea
+        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          error ? 'border-red-500' : 'border-gray-300'
+        } ${className}`}
         {...props}
-        style={{
-          width: '100%',
-          minHeight: '100px',
-          padding: '8px 12px',
-          borderRadius: '4px',
-          border: '1px solid #E0E0E0',
-          fontSize: '14px',
-          fontFamily: 'inherit',
-          resize: 'vertical',
-          ...props.style,
-        }}
       />
+      {error && (
+        <p className="mt-1 text-sm text-red-500">{error}</p>
+      )}
     </div>
   );
 }; 

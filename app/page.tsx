@@ -1,7 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useSwipeable } from 'react-swipeable';
 import { Layout } from '@/app/components/layout/Layout';
+import { Header } from '@/app/components/layout/Header';
 import { BoardCard } from '@/app/components/boards/BoardCard';
 import { BoardModal } from '@/app/components/boards/BoardModal';
 import { Button } from '@/app/components/ui/Button';
@@ -13,14 +15,27 @@ import { calculateSystemHealthScore } from '@/app/utils/analytics';
 import { createInitialBoards, createInitialTasks } from '@/app/utils/initialData';
 import { Board, Task } from '@/app/types';
 import { TaskModal } from '@/app/components/tasks/TaskModal';
+import { Board as BoardComponent } from '@/app/components/boards/Board';
+
+const formatTime = () => {
+  return new Date().toLocaleTimeString('en-US', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+};
 
 export default function Dashboard() {
-  const { state, setState, isLoading } = useAppState();
+  const { state, setState, isLoading, createBoard, updateBoard, deleteBoard, createTask, updateTask, deleteTask } = useAppState();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isBoardModalOpen, setIsBoardModalOpen] = React.useState(false);
   const [editingBoard, setEditingBoard] = React.useState<Board | undefined>();
   const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
   const [selectedBoardId, setSelectedBoardId] = React.useState<string | null>(null);
+  const [currentBoardIndex, setCurrentBoardIndex] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingBoardName, setEditingBoardName] = useState('');
 
   const systemHealthScore = React.useMemo(() => {
     if (!state?.tasks) return 100;
@@ -35,19 +50,37 @@ export default function Dashboard() {
     );
   }, [state?.boards, searchTerm]);
 
+  const handlers = useSwipeable({
+    onSwipedLeft: () => {
+      if (currentBoardIndex < state.boards.length - 1) {
+        setCurrentBoardIndex(prev => prev + 1);
+        if (typeof window !== 'undefined' && window.navigator.vibrate) {
+          window.navigator.vibrate(50);
+        }
+      }
+    },
+    onSwipedRight: () => {
+      if (currentBoardIndex > 0) {
+        setCurrentBoardIndex(prev => prev - 1);
+        if (typeof window !== 'undefined' && window.navigator.vibrate) {
+          window.navigator.vibrate(50);
+        }
+      }
+    },
+    preventDefaultTouchmoveEvent: true,
+    trackMouse: true,
+  });
+
   const handleCreateBoard = () => {
     hapticFeedback.medium();
     setEditingBoard(undefined);
     setIsBoardModalOpen(true);
   };
 
-  const handleEditBoard = (boardId: string) => {
+  const handleEditBoard = (boardId: string, currentName: string) => {
     hapticFeedback.light();
-    const board = state?.boards.find((b) => b.id === boardId);
-    if (board) {
-      setEditingBoard(board);
-      setIsBoardModalOpen(true);
-    }
+    setIsEditing(true);
+    setEditingBoardName(currentName);
   };
 
   const handleDeleteBoard = async (boardId: string) => {
@@ -56,11 +89,10 @@ export default function Dashboard() {
       'Are you sure you want to delete this board? All tasks will be deleted as well.'
     );
     if (confirmed && state) {
-      const updatedBoards = state.boards.filter((board) => board.id !== boardId);
-      setState({
-        ...state,
-        boards: updatedBoards,
-      });
+      deleteBoard(boardId);
+      if (currentBoardIndex >= state.boards.length - 1) {
+        setCurrentBoardIndex(Math.max(0, state.boards.length - 2));
+      }
     }
   };
 
@@ -194,6 +226,25 @@ export default function Dashboard() {
     }
   };
 
+  const handleAddBoard = () => {
+    hapticFeedback.medium();
+    const name = prompt('Enter board name:');
+    if (name) {
+      createBoard(name);
+      setCurrentBoardIndex(state.boards.length);
+    }
+  };
+
+  const handleSaveBoardName = (boardId: string) => {
+    if (editingBoardName.trim()) {
+      updateBoard(boardId, { name: editingBoardName.trim() });
+    }
+    setIsEditing(false);
+    setEditingBoardName('');
+  };
+
+  const currentBoard = state.boards[currentBoardIndex];
+
   if (isLoading) {
     return (
       <Layout>
@@ -213,163 +264,102 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '24px',
-          padding: '16px 0',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <h1
-            style={{
-              margin: 0,
-              fontSize: '32px',
-              fontWeight: 600,
-            }}
-          >
-            Dashboard
-          </h1>
-          <div
-            style={{
-              display: 'flex',
-              gap: '8px',
-            }}
-          >
-            <Button
-              variant="secondary"
-              onClick={handleResetData}
+      <Header
+        title="Car Maintenance"
+        currentTime={formatTime()}
+        onAddBoard={handleAddBoard}
+      />
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setCurrentBoardIndex(prev => Math.max(0, prev - 1))}
+              disabled={currentBoardIndex === 0}
+              className="p-2 rounded-full bg-white shadow hover:bg-gray-50 disabled:opacity-50"
             >
-              Reset Data
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleCreateBoard}
+              ←
+            </button>
+            <span className="text-lg font-medium">
+              {currentBoardIndex + 1} / {state.boards.length}
+            </span>
+            <button
+              onClick={() => setCurrentBoardIndex(prev => Math.min(state.boards.length - 1, prev + 1))}
+              disabled={currentBoardIndex === state.boards.length - 1}
+              className="p-2 rounded-full bg-white shadow hover:bg-gray-50 disabled:opacity-50"
             >
-              Create Board
-            </Button>
+              →
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleEditBoard(state.boards[currentBoardIndex].id, state.boards[currentBoardIndex].name)}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => handleDeleteBoard(state.boards[currentBoardIndex].id)}
+              className="px-4 py-2 text-red-600 hover:text-red-800"
+            >
+              Delete
+            </button>
           </div>
         </div>
-
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <Input
-              placeholder="Search boards..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ maxWidth: '300px' }}
-            />
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: '14px',
-                  color: '#666666',
-                }}
-              >
-                System Health:
-              </span>
-              <div
-                style={{
-                  width: '100px',
-                  height: '8px',
-                  backgroundColor: '#E0E0E0',
-                  borderRadius: '4px',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    width: `${systemHealthScore}%`,
-                    height: '100%',
-                    backgroundColor:
-                      systemHealthScore >= 80
-                        ? '#4CAF50'
-                        : systemHealthScore >= 50
-                        ? '#FFA726'
-                        : '#F44336',
-                    transition: 'width 0.3s ease-in-out',
-                  }}
+        <div {...handlers} className="relative">
+          <div className="flex transition-transform duration-300 ease-in-out" style={{ transform: `translateX(-${currentBoardIndex * 100}%)` }}>
+            {state.boards.map((board, index) => (
+              <div key={board.id} className="w-full flex-shrink-0 px-4">
+                {isEditing && index === currentBoardIndex ? (
+                  <div className="flex items-center gap-2 mb-4">
+                    <input
+                      type="text"
+                      value={editingBoardName}
+                      onChange={(e) => setEditingBoardName(e.target.value)}
+                      className="flex-1 px-3 py-2 border rounded-md"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => handleSaveBoardName(board.id)}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditing(false);
+                        setEditingBoardName('');
+                      }}
+                      className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : null}
+                <BoardComponent
+                  board={board}
+                  onTaskUpdate={updateTask}
+                  onTaskDelete={(taskId) => deleteTask(board.id, taskId)}
+                  onTaskCreate={createTask}
                 />
               </div>
-              <span
-                style={{
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color:
-                    systemHealthScore >= 80
-                      ? '#4CAF50'
-                      : systemHealthScore >= 50
-                      ? '#FFA726'
-                      : '#F44336',
-                }}
-              >
-                {Math.round(systemHealthScore)}%
-              </span>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '16px',
-            }}
-          >
-            {filteredBoards.map((board) => (
-              <BoardCard
-                key={board.id}
-                board={board}
-                tasks={state?.tasks || []}
-                onEdit={handleEditBoard}
-                onDelete={handleDeleteBoard}
-                onAddTask={handleAddTask}
-                onTaskStatusChange={handleTaskStatusChange}
-                onTaskEdit={handleTaskEdit}
-                onTaskDelete={handleTaskDelete}
-              />
             ))}
           </div>
         </div>
+      </main>
 
-        <BoardModal
-          isOpen={isBoardModalOpen}
-          onClose={() => setIsBoardModalOpen(false)}
-          board={editingBoard}
-          onSubmit={handleBoardSubmit}
-        />
+      <BoardModal
+        isOpen={isBoardModalOpen}
+        onClose={() => setIsBoardModalOpen(false)}
+        board={editingBoard}
+        onSubmit={handleBoardSubmit}
+      />
 
-        <TaskModal
-          isOpen={isTaskModalOpen}
-          onClose={() => setIsTaskModalOpen(false)}
-          boardId={selectedBoardId || ''}
-          onSubmit={handleTaskSubmit}
-        />
-      </div>
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        boardId={selectedBoardId || ''}
+        onSubmit={handleTaskSubmit}
+      />
     </Layout>
   );
 }

@@ -1,20 +1,73 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { AppState } from '../types';
+import { AppState, Task, Board } from '../types';
 import { loadState, saveState } from './storage';
 import { showTelegramAlert } from './telegram';
 import { ERROR_MESSAGES } from './constants';
 import { createInitialBoards, createInitialTasks } from './initialData';
 
-const initialBoards = createInitialBoards();
+const STORAGE_KEY = 'car_maintenance_state';
+
+const initialBoards: Board[] = [
+  {
+    id: '1',
+    name: 'Maintenance',
+    tasks: [
+      {
+        id: '1',
+        title: 'Oil Change',
+        description: 'Change engine oil and filter',
+        status: 'active',
+        lastInteraction: Date.now(),
+        createdAt: Date.now(),
+        boardId: '1',
+        warningHours: 24,
+        criticalHours: 48,
+        iconName: 'FaOilCan',
+        iconLibrary: 'fa',
+      },
+      {
+        id: '2',
+        title: 'Tire Rotation',
+        description: 'Rotate tires and check pressure',
+        status: 'active',
+        lastInteraction: Date.now(),
+        createdAt: Date.now(),
+        boardId: '1',
+        warningHours: 24,
+        criticalHours: 48,
+        iconName: 'FaTachometerAlt',
+        iconLibrary: 'fa',
+      },
+    ],
+    order: 0,
+    createdAt: Date.now(),
+  },
+  {
+    id: '2',
+    name: 'Inspections',
+    tasks: [
+      {
+        id: '3',
+        title: 'Brake Check',
+        description: 'Inspect brake pads and rotors',
+        status: 'active',
+        lastInteraction: Date.now(),
+        createdAt: Date.now(),
+        boardId: '2',
+        warningHours: 24,
+        criticalHours: 48,
+        iconName: 'FaBrakeSystem',
+        iconLibrary: 'fa',
+      },
+    ],
+    order: 1,
+    createdAt: Date.now(),
+  },
+];
+
 const initialState: AppState = {
   boards: initialBoards,
-  tasks: createInitialTasks(initialBoards),
-  statusChangeLogs: [],
-  defaultTaskSettings: {
-    warningHours: 24,
-    criticalHours: 48,
-    defaultStatus: 'inactive',
-  },
+  currentTime: Date.now(),
 };
 
 // Hook for managing local storage state
@@ -45,60 +98,152 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
 // Hook for managing app state
 export const useAppState = () => {
   const [state, setState] = useState<AppState>(() => {
-    if (typeof window !== 'undefined') {
-      const savedState = localStorage.getItem('appState');
-      if (savedState) {
-        try {
-          const parsedState = JSON.parse(savedState);
-          // Convert string dates back to Date objects and ensure boards have tasks array
-          parsedState.boards = parsedState.boards.map((board: any) => ({
-            ...board,
-            createdAt: new Date(board.createdAt),
-            tasks: board.tasks || [], // Ensure tasks array exists
-          }));
-          parsedState.tasks = parsedState.tasks.map((task: any) => ({
-            ...task,
-            createdAt: new Date(task.createdAt),
-            lastInteraction: new Date(task.lastInteraction),
-            lastStatusChange: new Date(task.lastStatusChange),
-          }));
-          parsedState.statusChangeLogs = parsedState.statusChangeLogs.map((log: any) => ({
-            ...log,
-            timestamp: new Date(log.timestamp),
-          }));
-          return parsedState;
-        } catch (error) {
-          console.error('Error parsing saved state:', error);
-          return initialState;
-        }
-      }
-      return initialState;
-    }
-    return initialState;
+    if (typeof window === 'undefined') return initialState;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : initialState;
   });
 
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('appState', JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
     setIsLoading(false);
   }, [state]);
 
-  const updateState = useCallback((newState: AppState) => {
-    try {
-      setState(newState);
-      saveState(newState);
-      setError(null);
-    } catch (err) {
-      setError(ERROR_MESSAGES.UNKNOWN_ERROR);
-      showTelegramAlert(ERROR_MESSAGES.UNKNOWN_ERROR);
-    }
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setState(prevState => {
+        const currentTime = Date.now();
+        const updatedBoards = prevState.boards.map(board => ({
+          ...board,
+          tasks: board.tasks.map(task => {
+            const hoursSinceLastInteraction = Math.floor(
+              (currentTime - task.lastInteraction) / (1000 * 60 * 60)
+            );
+
+            let newStatus = task.status;
+            if (task.status === 'active' && hoursSinceLastInteraction >= task.warningHours) {
+              newStatus = 'warning';
+              console.log(`Task "${task.title}" moved to warning state`);
+            }
+            if (task.status === 'warning' && hoursSinceLastInteraction >= task.criticalHours) {
+              newStatus = 'critical';
+              console.log(`Task "${task.title}" moved to critical state`);
+            }
+
+            return {
+              ...task,
+              status: newStatus,
+            };
+          }),
+        }));
+
+        return {
+          ...prevState,
+          boards: updatedBoards,
+          currentTime,
+        };
+      });
+    }, 60000); // Check every minute
+
+    return () => clearInterval(timer);
   }, []);
 
-  return { state, setState: updateState, isLoading, error };
+  const createBoard = (name: string) => {
+    setState(prevState => ({
+      ...prevState,
+      boards: [
+        ...prevState.boards,
+        {
+          id: Date.now().toString(),
+          name,
+          tasks: [],
+        },
+      ],
+    }));
+  };
+
+  const updateBoard = (boardId: string, updates: Partial<Board>) => {
+    setState(prevState => ({
+      ...prevState,
+      boards: prevState.boards.map(board =>
+        board.id === boardId ? { ...board, ...updates } : board
+      ),
+    }));
+  };
+
+  const deleteBoard = (boardId: string) => {
+    setState(prevState => ({
+      ...prevState,
+      boards: prevState.boards.filter(board => board.id !== boardId),
+    }));
+  };
+
+  const createTask = (task: Partial<Task>) => {
+    setState(prevState => ({
+      ...prevState,
+      boards: prevState.boards.map(board =>
+        board.id === task.boardId
+          ? {
+              ...board,
+              tasks: [
+                ...board.tasks,
+                {
+                  ...task,
+                  id: Date.now().toString(),
+                  createdAt: Date.now(),
+                  lastInteraction: Date.now(),
+                  status: 'active',
+                } as Task,
+              ],
+            }
+          : board
+      ),
+    }));
+  };
+
+  const updateTask = (task: Task) => {
+    setState(prevState => ({
+      ...prevState,
+      boards: prevState.boards.map(board =>
+        board.id === task.boardId
+          ? {
+              ...board,
+              tasks: board.tasks.map(t =>
+                t.id === task.id ? { ...t, ...task } : t
+              ),
+            }
+          : board
+      ),
+    }));
+  };
+
+  const deleteTask = (boardId: string, taskId: string) => {
+    setState(prevState => ({
+      ...prevState,
+      boards: prevState.boards.map(board =>
+        board.id === boardId
+          ? {
+              ...board,
+              tasks: board.tasks.filter(task => task.id !== taskId),
+            }
+          : board
+      ),
+    }));
+  };
+
+  return {
+    state,
+    isLoading,
+    createBoard,
+    updateBoard,
+    deleteBoard,
+    createTask,
+    updateTask,
+    deleteTask,
+  };
 };
 
 // Hook for managing window dimensions

@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 
 interface Option {
@@ -7,44 +9,40 @@ interface Option {
 
 interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {
   label?: string;
+  error?: string;
   options: Option[];
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
-export const Select: React.FC<SelectProps> = ({ label, options, ...props }) => {
+export const Select: React.FC<SelectProps> = ({
+  label,
+  error,
+  options,
+  className = '',
+  ...props
+}) => {
   return (
-    <div>
+    <div className="w-full">
       {label && (
-        <label
-          style={{
-            display: 'block',
-            marginBottom: '4px',
-            fontSize: '14px',
-            fontWeight: 500,
-          }}
-        >
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           {label}
         </label>
       )}
       <select
+        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+          error ? 'border-red-500' : 'border-gray-300'
+        } ${className}`}
         {...props}
-        style={{
-          width: '100%',
-          padding: '8px 12px',
-          borderRadius: '4px',
-          border: '1px solid #E0E0E0',
-          fontSize: '14px',
-          fontFamily: 'inherit',
-          backgroundColor: 'white',
-          ...props.style,
-        }}
       >
-        {options.map(option => (
+        {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
         ))}
       </select>
+      {error && (
+        <p className="mt-1 text-sm text-red-500">{error}</p>
+      )}
     </div>
   );
 }; 

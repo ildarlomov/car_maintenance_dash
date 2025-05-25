@@ -1,10 +1,7 @@
+'use client';
+
 import React from 'react';
 import { Task } from '../../types';
-import { Card, CardHeader, CardContent, CardFooter } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { getRelativeTimeString } from '../../utils/date';
-import { calculateTaskHealthScore } from '../../utils/analytics';
-import { hapticFeedback } from '../../utils/telegram';
 import * as FaIcons from 'react-icons/fa';
 import * as MdIcons from 'react-icons/md';
 import * as IoIcons from 'react-icons/io5';
@@ -13,240 +10,97 @@ import * as HiIcons from 'react-icons/hi';
 
 interface TaskCardProps {
   task: Task;
-  onStatusChange: (taskId: string, newStatus: Task['status']) => void;
-  onEdit: (taskId: string) => void;
-  onDelete: (taskId: string) => void;
+  onLongPress: (task: Task) => void;
+  onClick: (task: Task) => void;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({
-  task,
-  onStatusChange,
-  onEdit,
-  onDelete,
-}) => {
-  const healthScore = calculateTaskHealthScore(task);
-  const timeSinceLastInteraction = getRelativeTimeString(new Date(task.lastInteraction));
+export const TaskCard: React.FC<TaskCardProps> = ({ task, onLongPress, onClick }) => {
+  const [isPressed, setIsPressed] = React.useState(false);
+  const pressTimer = React.useRef<NodeJS.Timeout>();
 
-  const getStatusColor = () => {
-    switch (task.status) {
-      case 'inactive':
-        return '#9E9E9E';
+  const handlePressStart = () => {
+    pressTimer.current = setTimeout(() => {
+      setIsPressed(true);
+      onLongPress(task);
+    }, 500);
+  };
+
+  const handlePressEnd = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+    }
+    if (!isPressed) {
+      onClick(task);
+    }
+    setIsPressed(false);
+  };
+
+  const getStatusColor = (status: Task['status']) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-500';
       case 'warning':
-        return '#FF9800';
+        return 'bg-yellow-500';
       case 'critical':
-        return '#F44336';
+        return 'bg-red-500';
+      case 'completed':
+        return 'bg-gray-500';
       default:
-        return '#2196F3';
+        return 'bg-gray-500';
     }
   };
 
-  const getHealthColor = () => {
-    if (healthScore >= 80) return '#4CAF50';
-    if (healthScore >= 50) return '#FF9800';
-    return '#F44336';
-  };
-
-  const handleStatusChange = (newStatus: Task['status']) => {
-    hapticFeedback.medium();
-    onStatusChange(task.id, newStatus);
-  };
-
-  const handleEdit = () => {
-    hapticFeedback.light();
-    onEdit(task.id);
-  };
-
-  const handleDelete = () => {
-    hapticFeedback.heavy();
-    onDelete(task.id);
-  };
-
-  const getIconComponent = () => {
-    const iconName = task.iconName || 'FaCar';
-    const iconLibrary = task.iconLibrary || 'fa';
-
-    switch (iconLibrary) {
+  const IconComponent = React.useMemo(() => {
+    if (!task.iconName) return FaIcons.FaCar;
+    switch (task.iconLibrary) {
       case 'fa':
-        return FaIcons[iconName as keyof typeof FaIcons] || FaIcons.FaCar;
+        return FaIcons[task.iconName as keyof typeof FaIcons] || FaIcons.FaCar;
       case 'md':
-        return MdIcons[iconName as keyof typeof MdIcons] || MdIcons.MdDashboard;
+        return MdIcons[task.iconName as keyof typeof MdIcons] || MdIcons.MdDashboard;
       case 'io':
-        return IoIcons[iconName as keyof typeof IoIcons] || IoIcons.IoCarSport;
+        return IoIcons[task.iconName as keyof typeof IoIcons] || IoIcons.IoCarSport;
       case 'bi':
-        return BiIcons[iconName as keyof typeof BiIcons] || BiIcons.BiCar;
+        return BiIcons[task.iconName as keyof typeof BiIcons] || BiIcons.BiCar;
       case 'hi':
-        return HiIcons[iconName as keyof typeof HiIcons] || HiIcons.HiCar;
+        return HiIcons[task.iconName as keyof typeof HiIcons] || HiIcons.HiOutlineHome;
       default:
         return FaIcons.FaCar;
     }
-  };
+  }, [task.iconLibrary, task.iconName]);
 
-  const IconComponent = getIconComponent();
+  const lastInteraction = new Date(task.lastInteraction);
+  const hoursSinceLastInteraction = Math.floor(
+    (Date.now() - task.lastInteraction) / (1000 * 60 * 60)
+  );
 
   return (
-    <Card variant="elevated">
-      <CardHeader>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <IconComponent
-              style={{
-                fontSize: '24px',
-                color: getStatusColor(),
-              }}
-            />
-            <h3
-              style={{
-                margin: 0,
-                fontSize: '18px',
-                fontWeight: 600,
-              }}
-            >
-              {task.name}
-            </h3>
-          </div>
-          <div
-            style={{
-              width: '12px',
-              height: '12px',
-              borderRadius: '50%',
-              backgroundColor: getStatusColor(),
-            }}
-          />
+    <div
+      className={`p-4 rounded-lg shadow-md bg-white cursor-pointer transition-transform ${
+        isPressed ? 'scale-95' : 'hover:scale-105'
+      }`}
+      onMouseDown={handlePressStart}
+      onMouseUp={handlePressEnd}
+      onMouseLeave={handlePressEnd}
+      onTouchStart={handlePressStart}
+      onTouchEnd={handlePressEnd}
+    >
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-full ${getStatusColor(task.status)}`}>
+          {React.createElement(IconComponent, { size: 24, className: 'text-white' })}
         </div>
-      </CardHeader>
-      <CardContent>
-        {task.description && (
-          <p
-            style={{
-              margin: '0 0 16px 0',
-              color: '#666666',
-              fontSize: '14px',
-            }}
-          >
-            {task.description}
-          </p>
+        <div className="flex-1">
+          <h3 className="font-medium">{task.title}</h3>
+          <p className="text-sm text-gray-600">{task.description}</p>
+        </div>
+      </div>
+      <div className="mt-2 text-xs text-gray-500">
+        Last interaction: {lastInteraction.toLocaleString()}
+        {hoursSinceLastInteraction > 0 && (
+          <span className="ml-2">
+            ({hoursSinceLastInteraction} hours ago)
+          </span>
         )}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span style={{ color: '#666666', fontSize: '14px' }}>
-              Last interaction:
-            </span>
-            <span style={{ color: '#000000', fontSize: '14px' }}>
-              {timeSinceLastInteraction}
-            </span>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span style={{ color: '#666666', fontSize: '14px' }}>
-              Health score:
-            </span>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <div
-                style={{
-                  width: '60px',
-                  height: '4px',
-                  backgroundColor: '#E0E0E0',
-                  borderRadius: '2px',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    width: `${healthScore}%`,
-                    height: '100%',
-                    backgroundColor: getHealthColor(),
-                    transition: 'width 0.3s ease-in-out',
-                  }}
-                />
-              </div>
-              <span
-                style={{
-                  color: getHealthColor(),
-                  fontSize: '14px',
-                  fontWeight: 600,
-                }}
-              >
-                {healthScore}%
-              </span>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button
-          variant="primary"
-          size="small"
-          onClick={() => handleStatusChange('inactive')}
-          disabled={task.status === 'inactive'}
-        >
-          Mark Inactive
-        </Button>
-        <Button
-          variant="warning"
-          size="small"
-          onClick={() => handleStatusChange('warning')}
-          disabled={task.status === 'warning'}
-        >
-          Mark Warning
-        </Button>
-        <Button
-          variant="error"
-          size="small"
-          onClick={() => handleStatusChange('critical')}
-          disabled={task.status === 'critical'}
-        >
-          Mark Critical
-        </Button>
-        <Button
-          variant="secondary"
-          size="small"
-          onClick={handleEdit}
-        >
-          Edit
-        </Button>
-        <Button
-          variant="error"
-          size="small"
-          onClick={handleDelete}
-        >
-          Delete
-        </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }; 
